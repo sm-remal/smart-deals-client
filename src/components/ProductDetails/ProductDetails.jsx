@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useLoaderData, Link } from 'react-router';
 import { AuthContext } from '../../contexts/AuthContext';
 import Swal from 'sweetalert2';
@@ -6,7 +6,8 @@ import Swal from 'sweetalert2';
 const ProductDetails = () => {
     const productDetails = useLoaderData();
     console.log(productDetails)
-    const { _id: productId, seller_contact: contact, status, image } = productDetails
+    const [bids, setBids] = useState([])
+    const { _id: productId, seller_contact: contact, status, seller_image } = productDetails
     const bidModalRef = useRef(null)
     const { user } = useContext(AuthContext)
 
@@ -39,13 +40,18 @@ const ProductDetails = () => {
     }
 
     useEffect(() => {
-        
-    }, [])
+        fetch(`http://localhost:3000/products/bids/${productId}`)
+            .then(res => res.json())
+            .then(data => {
+                setBids(data)
+            })
+    }, [productId])
 
     const handleBidSubmit = (e) => {
         const name = e.target.name.value;
         const email = e.target.email.value;
         const bid = e.target.bid.value;
+        const contactNumber = e.target.phone.value;
 
         console.log(productId, name, email, bid)
         const newBid = {
@@ -53,8 +59,8 @@ const ProductDetails = () => {
             buyer_name: name,
             buyer_email: email,
             bid_price: bid,
-            buyer_contact: contact,
-            buyer_image: image,
+            buyer_contact: user?.phoneNumber || contactNumber || contact,
+            buyer_image: user?.photoURL || seller_image,
             status: status,
         }
 
@@ -75,9 +81,15 @@ const ProductDetails = () => {
                         showConfirmButton: false,
                         timer: 1500
                     });
+
+                    newBid._id = data.insertedId;
+                    const newBids = [...bids, newBid ]
+                    newBids.sort((a, b) => b.bid_price - a.bid_price)
+                    setBids(newBids)
                 }
             })
     }
+    console.log(user)
     return (
         <div className="min-h-screen bg-white py-8">
             <div className="max-w-7xl mx-auto px-4">
@@ -272,8 +284,9 @@ const ProductDetails = () => {
                                             Buyer Image URL
                                         </label>
                                         <input
+                                            readOnly
                                             type="url"
-                                            placeholder="https://...your_img_url"
+                                            defaultValue={user?.photoURL || seller_image} 
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     </div>
@@ -284,6 +297,7 @@ const ProductDetails = () => {
                                             Place your Bid
                                         </label>
                                         <input
+                                            required
                                             type="text"
                                             placeholder="Place your bid" name='bid'
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -296,8 +310,9 @@ const ProductDetails = () => {
                                             Contact Info
                                         </label>
                                         <input
+                                            required
                                             type="tel"
-                                            placeholder="e.g. +1-555-1234"
+                                            placeholder="e.g. +01555-1234" name='phone'
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     </div>
@@ -333,7 +348,7 @@ const ProductDetails = () => {
                 {/* Bids Section */}
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                        Bids For This Products: <span className="text-purple-600">03</span>
+                        Bids For This Products: <span className="text-purple-600">{bids.length}</span>
                     </h2>
 
                     {/* Bids Table */}
@@ -343,47 +358,61 @@ const ProductDetails = () => {
                                 <tr>
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">SL No</th>
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Product</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Seller</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Buyer Email</th>
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Bid Price</th>
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {[1, 2, 3].map((num) => (
-                                    <tr key={num} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="py-4 px-4 text-sm text-gray-700">{num}</td>
-                                        <td className="py-4 px-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gray-200 rounded"></div>
-                                                <div>
-                                                    <div className="font-semibold text-gray-900 text-sm">Orange Juice</div>
-                                                    <div className="text-xs text-gray-500">$22.5</div>
+                                {bids.length > 0 ? (
+                                    bids.map((bid, index) => (
+                                        <tr key={bid._id} className="border-b border-gray-100 hover:bg-gray-50">
+                                            <td className="py-4 px-4 text-sm text-gray-700">{index + 1}</td>
+                                            <td className="py-4 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    <img
+                                                        src={bid.buyer_image || "https://via.placeholder.com/50"}
+                                                        alt={bid.buyer_name}
+                                                        className="w-12 h-12 rounded object-cover bg-gray-200"
+                                                    />
+                                                    <div>
+                                                        <div className="font-semibold text-gray-900 text-sm">{bid.buyer_name}</div>
+                                                        <div className="text-xs text-gray-500">{bid.buyer_contact}</div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 px-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                                                <div>
-                                                    <div className="font-semibold text-gray-900 text-sm">Sara Chen</div>
-                                                    <div className="text-xs text-gray-500">crafts.by.sara@shop.net</div>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div>
+                                                        <div className="font-semibold text-gray-900 text-sm">{bid.buyer_email}</div>
+                                                        <div className="text-xs text-gray-500 capitalize">{bid.status}</div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 px-4 font-semibold text-gray-900 text-sm">$10</td>
-                                        <td className="py-4 px-4">
-                                            <div className="flex gap-2">
-                                                <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold hover:bg-green-200">
-                                                    Accept Offer
-                                                </button>
-                                                <button className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200">
-                                                    Reject Offer
-                                                </button>
-                                            </div>
+                                            </td>
+                                            <td className="py-4 px-4 font-semibold text-gray-900 text-sm">
+                                                ${bid.bid_price}
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <div className="flex gap-2">
+                                                    <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold hover:bg-green-200">
+                                                        Accept
+                                                    </button>
+                                                    <button className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200">
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="text-center py-6 text-gray-500">
+                                            No bids yet for this product.
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
+
                         </table>
                     </div>
                 </div>
