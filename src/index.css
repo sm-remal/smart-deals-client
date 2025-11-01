@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@plugin "daisyui";
+@plugin "daisyui/theme" {
+  name: "light";
+  default: true;
+  --color-primary: "purple";
+  --color-secondary: "base-300";
+}
+
+.btn-primary {
+  @apply text-white border-none;
+  background: linear-gradient(to right, #632EE3, #9F62F2);
+}
+
+.btn-primary:hover {
+  @apply opacity-90;
+}
+
+.linear-text {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(to right, #632EE3, #9050e9);
+}
