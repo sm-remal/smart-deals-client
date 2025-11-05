@@ -1,29 +1,39 @@
 // Import necessary dependencies
-import React, { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../../contexts/AuthContext"; // Import authentication context
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2"; // For beautiful alert dialogs
+import useAuth from "../../hooks/useAuth";
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 
 const MyBids = () => {
   // Get the currently logged-in user from context
-  const { user } = useContext(AuthContext);
+  // const { user } = useContext(AuthContext);
+  const { user } = useAuth()
+  const axiosSecure = useAxiosSecure()
 
   // Local state to store fetched bids
   const [bids, setBids] = useState([]);
 
   // ================== Fetch User's Bids ==================
-  useEffect(() => {   
-    // Only fetch if user email is available
-    if (user?.email) {
-      fetch(`http://localhost:3000/my-bids?email=${user.email}`, {
-        headers: {
-          authorization: `Bearer ${user.accessToken}`
-        }
-      })
-        .then((res) => res.json())
-        .then((data) => setBids(data)) // Save bids in local state
-        .catch((err) => console.error("Error fetching bids:", err));
-    }
-  }, [user]);
+  // useEffect(() => {   
+  //   // Only fetch if user email is available
+  //   if (user?.email) {
+  //     fetch(`http://localhost:3000/my-bids?email=${user.email}`, {
+  //       headers: {
+  //         authorization: `Bearer ${user.accessToken}`
+  //       }
+  //     })
+  //       .then((res) => res.json())
+  //       .then((data) => setBids(data)) // Save bids in local state
+  //       .catch((err) => console.error("Error fetching bids:", err));
+  //   }
+  // }, [user]);
+
+  useEffect(() => {
+    axiosSecure.get(`/my-bids?email=${user.email}`)
+    .then(data => setBids(data.data))
+  }, [user, axiosSecure])
+
+  console.log(bids)
 
   // ================== Handle Delete Bid ==================
   const handleDeleteBids = (id) => {
