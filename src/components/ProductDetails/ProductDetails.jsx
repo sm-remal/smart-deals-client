@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useLoaderData, Link } from 'react-router';
 import { AuthContext } from '../../contexts/AuthContext';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const ProductDetails = () => {
     const productDetails = useLoaderData();
@@ -22,9 +23,15 @@ const ProductDetails = () => {
     const handleBidModal = () => bidModalRef.current.showModal();
 
     useEffect(() => {
-        fetch(`http://localhost:3000/products/bids/${productId}`)
-            .then(res => res.json())
-            .then(data => setBids(data));
+        // fetch(`http://localhost:3000/products/bids/${productId}`)
+        //     .then(res => res.json())
+        //     .then(data => setBids(data));
+
+
+        axios.get(`http://localhost:3000/products/bids/${productId}`)
+        .then(data => setBids(data.data))
+
+
     }, [productId]);
 
     const handleBidSubmit = (e) => {
